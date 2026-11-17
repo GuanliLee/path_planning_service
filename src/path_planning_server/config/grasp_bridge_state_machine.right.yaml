@@ -1,0 +1,346 @@
+grasp_bridge_state_machine:
+  ros__parameters:
+    default_arm_name: right
+    default_scene_id: 1
+    world_frame: world
+    right_camera_frame: cam_right_color_optical_frame
+    left_camera_frame: cam_left_color_optical_frame
+
+    bridge_service_name: /grasp_bridge/execute_task
+    joint_plan_service_name: /plan_to_joints
+    cartesian_plan_service_name: /plan_cartesian_path
+    pose_v3_service_name: /plan_to_pose_v3
+    # Ordered Link6 waypoints for global OMPL phases. The first three files are
+    # reserved for standalone right-arm restocking. Full-flow restock/pick use
+    # dedicated place routes so their behavior cannot leak into standalone jobs.
+    route_to_pregrasp_config: right_route_to_pregrasp.yaml
+    route_to_place_config: right_route_to_place.yaml
+    route_to_photo_config: right_route_to_photo.yaml
+    full_flow_restock_route_to_place_config: left_full_flow_route_to_place.yaml
+    full_flow_pick_route_to_place_config: right_full_flow_pick_route_to_place.yaml
+    # Scene 1 keeps every legacy route above unchanged. Scene 3 uses dedicated
+    # files so teaching the large shelf can never overwrite the old shelf.
+    route_to_place_scene_overrides:
+      - "3=right_route_to_place_scene_003.yaml"
+    full_flow_restock_route_to_place_scene_overrides:
+      - "3=left_full_flow_route_to_place_scene_003.yaml"
+    full_flow_pick_route_to_place_scene_overrides:
+      - "3=right_full_flow_pick_route_to_place_scene_003.yaml"
+    # Scene 3 (货架2) never reuses a route from Scene 1. Each arm/layer/position
+    # must have its own explicitly enabled route before execution is accepted.
+    slot_route_required_scene_ids: [3]
+    route_to_place_slot_overrides:
+      - "3:right:1:4=right_route_to_place_scene_003_layer_1_position_4.yaml"
+      - "3:right:1:5=right_route_to_place_scene_003_layer_1_position_5.yaml"
+      - "3:right:1:6=right_route_to_place_scene_003_layer_1_position_6.yaml"
+      - "3:right:1:10=right_route_to_place_scene_003_layer_1_position_4.yaml"
+      - "3:right:1:11=right_route_to_place_scene_003_layer_1_position_5.yaml"
+      - "3:right:1:12=right_route_to_place_scene_003_layer_1_position_6.yaml"
+    route_to_photo_slot_overrides:
+      - "3:right:1:4=right_route_to_photo_scene_003_layer_1_position_4.yaml"
+      - "3:right:1:5=right_route_to_photo_scene_003_layer_1_position_5.yaml"
+      - "3:right:1:6=right_route_to_photo_scene_003_layer_1_position_6.yaml"
+      - "3:right:1:10=right_route_to_photo_scene_003_layer_1_position_10.yaml"
+      - "3:right:1:11=right_route_to_photo_scene_003_layer_1_position_5.yaml"
+      - "3:right:1:12=right_route_to_photo_scene_003_layer_1_position_6.yaml"
+    full_flow_restock_route_to_place_slot_overrides: []
+    full_flow_pick_route_to_place_slot_overrides: []
+    route_trajectory_optimizer_mode: none
+    route_use_preference_optimizer: false
+    route_use_tcp_position_constraint: false
+    # Keep the public task API unchanged. Internally use OMPL for long/global
+    # motions and collision-checked Cartesian paths for the short task-space
+    # approach/retreat motions around grasp and place.
+    hybrid_cartesian_motion_enabled: true
+    hybrid_cartesian_eef_step_m: 0.005
+    hybrid_cartesian_velocity_scaling: 0.10
+    hybrid_cartesian_acceleration_scaling: 0.10
+    # Require 121 axis_grasp_input_v1 geometry. Global pose steps go through
+    # /plan_to_pose_v2; the short hybrid steps above use /plan_cartesian_path.
+    # Missing/invalid geometry fails the task explicitly.
+    grasp_object_type: mesh
+    # Retry each pose candidate once when MoveIt reports a planning failure.
+    planning_retry_attempts: 2
+    cancel_plan_service_name: /cancel_plan_execution
+    cancel_service_timeout_s: 1.0
+    right_target_marker_topic: /rviz/right/planning_tcp_target_markers
+    left_target_marker_topic: /rviz/left/planning_tcp_target_markers
+
+    # Standalone right pick moves to the fixed first-run viewpoint before
+    # inference, then returns holding the object. Restock/full-flow keep their routes.
+    pick_return_to_start: true
+    move_to_capture_pose_before_inference: true
+    # After PLACE opens the gripper and removes the grasp ellipsoid, return to
+    # the same fixed capture pose used as this task profile's initial state.
+    return_to_initial_pose_after_place: true
+    capture_settle_s: 0.5
+    # After every motion/open settle completes, establish a monotonic barrier,
+    # discard two in-flight RGB-D pairs, and use the next fresh synchronized
+    # pair. RealSense header time is only a pairing key; TF is sampled while a
+    # 2 mm / 1 deg stationary gate is satisfied because device global-time can
+    # drift relative to the host ROS clock.
+    sensor_require_post_open_frames: true
+    sensor_sync_timeout_s: 3.0
+    sensor_queue_size: 30
+    sensor_discard_pairs_after_barrier: 2
+    sensor_max_stamp_skew_s: 0.005
+    # Matching capture timestamps stay strict; allow for DDS delivery jitter
+    # between the paired 640x480 RGB and depth messages at the configured 6 FPS.
+    sensor_max_arrival_skew_s: 0.15
+    sensor_max_arrival_age_s: 0.15
+    capture_stationary_translation_m: 0.002
+    capture_stationary_rotation_deg: 1.0
+    capture_tf_max_age_s: 0.20
+    capture_tf_advance_timeout_s: 0.50
+    # Move to the final grasp TCP with the fingers open, save synchronized
+    # wrist RGB/depth plus commanded/actual TCP, then close at the same pose.
+    pre_close_snapshot_enabled: false
+    pre_close_snapshot_settle_s: 0.3
+    pre_close_snapshot_dir: ~/.local/state/path_planning_service/pre_close
+    right_capture_tcp_frame: world
+    # Captured from the stationary right arm on 2026-08-13. This is the
+    # planning TCP: world -> right_link6, then 0.1358 m along link6 local +Z.
+    right_capture_tcp_position.x: 0.108352102988256
+    right_capture_tcp_position.y: -0.175633901351517
+    right_capture_tcp_position.z: 0.302898888944408
+    right_capture_tcp_orientation.x: -0.411496378423989
+    right_capture_tcp_orientation.y: 0.735836820151214
+    right_capture_tcp_orientation.z: 0.207267982321415
+    right_capture_tcp_orientation.w: 0.496240756244487
+    # Exact J1-J6 feedback captured from /joint_states_right while stationary
+    # at the right-arm restock photo position on 2026-08-14.
+    right_capture_joint_enabled: true
+    right_capture_joint_positions: [1.096756612, 0.376842732, -0.773397184, -0.213252900, 0.928927888, 0.106338624]
+    # First pick viewpoint from joint feedback logged on 2026-09-21.
+    pick_right_capture_joint_enabled: true
+    pick_right_capture_joint_positions: [0.5551553, 0.492775556, -1.3754594, -0.053692632, 0.83155548, 0.105326872]
+    pick_right_capture_tcp_frame: world
+    pick_right_capture_tcp_position.x: 0.10463960714440565
+    pick_right_capture_tcp_position.y: -0.24568796539882265
+    pick_right_capture_tcp_position.z: 0.5411954164488569
+    pick_right_capture_tcp_orientation.x: -0.14335902183258342
+    pick_right_capture_tcp_orientation.y: 0.6404697224017238
+    pick_right_capture_tcp_orientation.z: 0.21927594024115124
+    pick_right_capture_tcp_orientation.w: 0.7219174381999807
+    # Dedicated right-arm photo viewpoint for the Web dual-arm full flow.
+    # Captured from 40 stationary /joint_states_right samples on 2026-08-19;
+    # keep the standalone pick_right_capture_* profile unchanged.
+    full_flow_pick_right_capture_joint_enabled: true
+    full_flow_pick_right_capture_joint_positions: [0.872025560, 0.909094060, -1.470564088, -0.300158908, 0.919176692, 0.449549324]
+    left_capture_tcp_frame: world
+    # Fixed left start/return captured stationary on 2026-09-21 15:48:53.
+    # TCP: FK(world -> left_link6) plus 0.1358 m along local +Z.
+    left_capture_tcp_position.x: 0.17710353243685129
+    left_capture_tcp_position.y: 0.2369344036166066
+    left_capture_tcp_position.z: 0.5366002804556596
+    left_capture_tcp_orientation.x: 0.10802329253558395
+    left_capture_tcp_orientation.y: 0.6888425645313024
+    left_capture_tcp_orientation.z: -0.15189767532326912
+    left_capture_tcp_orientation.w: 0.7005383542612762
+    # J1-J6 verified stationary across 43 feedback samples.
+    left_capture_joint_enabled: true
+    left_capture_joint_positions: [-0.498776292, 0.68677028, -1.42063936, 0.18098150000000002, 0.8014122480000001, -0.18098150000000002]
+    # Left pick uses the same fixed start and return position.
+    pick_left_capture_joint_enabled: true
+    pick_left_capture_joint_positions: [-0.498776292, 0.68677028, -1.42063936, 0.18098150000000002, 0.8014122480000001, -0.18098150000000002]
+
+    right_rgb_topic: /cam_right/color/image_raw
+    right_depth_topic: /cam_right/aligned_depth_to_color/image_raw
+    right_camera_info_topic: /cam_right/color/camera_info
+    left_rgb_topic: /cam_left/color/image_raw
+    left_depth_topic: /cam_left/aligned_depth_to_color/image_raw
+    left_camera_info_topic: /cam_left/color/camera_info
+
+    inference_request_url: ws://127.0.0.1:1234
+    inference_timeout_s: 20.0
+    inference_candidate_count: 1
+    # 0 means send original camera resolution without resizing.
+    inference_image_size: 0
+    depth_uint16_scale: 0.001
+    depth_max_m: 10.0
+
+    # Keep the same coordinate chain for restock, standalone pick, and full
+    # flow. The state machine forwards the capture-time camera->world 121 pose
+    # unchanged; the bridge alone performs planning TCP -> Link6 with 135.8 mm.
+    tcp_to_link6_m: 0.1358
+    # The hand-eye JSON and 121 /<arm>/gripper_end_pos use the 59.3 mm parent.
+    link6_to_handeye_parent_m: 0.0593
+
+    open_before_grasp: true
+    # Open first, wait for the fingers to leave the camera view, then capture
+    # the latest RGB-D frames and request remote inference.
+    open_before_inference: true
+    open_before_inference_settle_s: 0.2
+    pick_open_before_inference: true
+    pick_open_settle_s: 0.2
+    # Move to a pre-grasp pose along the reverse 121 approach axis before
+    # descending into the final grasp target.
+    pre_grasp_before_grasp: true
+    pre_grasp_offset_m: 0.08
+    pre_grasp_min_z_m: 0.0
+    # Keep the inferred orientation, but stop 2 mm before the returned 121 TCP
+    # along each candidate's reverse approach axis. This preserves full mesh
+    # collision checking while clearing near-tangent wrist-camera contacts.
+    grasp_shallow_offset_m: 0.002
+    # Full-flow right pick uses the exact position returned by 121. This is
+    # isolated from the existing restock and standalone-pick 2 mm behavior.
+    full_flow_pick_grasp_shallow_offset_m: 0.0
+    # After closing and attaching the object, back out along the exact reverse
+    # approach axis before OMPL transports the object to the place waypoint.
+    retreat_after_grasp: true
+    retreat_after_grasp_offset_m: 0.06
+    # After GRASP, use one direct collision-checked waypoint 8 cm above the
+    # final placement position, then descend to the final placement position.
+    # Disable the extra 3 cm pickup lift and the PLACE_LIFT/PLACE_ORIENT/
+    # PLACE_XY segmented transport so no additional high pose is requested.
+    lift_after_grasp: false
+    place_lift_before_place: false
+    # Keep the calibrated 1 cm restock lift, then use the complete attached
+    # collision mesh to ensure its lowest world point remains 2 mm above the
+    # scene-1 middle shelf board (top Z = 0.230 m). The dynamic correction is
+    # applied only to the routed final PLACE_WAYPOINT and is bounded so bad
+    # geometry cannot silently produce a large arm motion.
+    restock_place_final_z_offset_m: 0.01
+    restock_place_dynamic_mesh_z_enabled: true
+    # Scene 3 uses the attached precision mesh in both directions: raise or
+    # lower the target until the held object's lowest point is 2 mm above the
+    # selected shelf board. Scene 1 keeps the original raise-only behavior.
+    restock_place_mesh_z_alignment_scene_ids: [3]
+    restock_place_support_surface_z_m: 0.23
+    # Scene 1 intentionally falls back to the legacy 0.23 m value. For the
+    # large shelf, select the highest board top below the requested place TCP.
+    restock_place_support_surfaces_by_scene:
+      - "3=0.13,0.46,0.80"
+    # Keep the legacy shelf at 2 mm. Scene 3 uses 8 mm: lower than the previous
+    # 20 mm setting while retaining margin for shelf/world calibration error.
+    restock_place_mesh_clearance_m: 0.002
+    restock_place_mesh_clearances_by_scene:
+      - "3=0.008"
+    restock_place_max_dynamic_z_adjustment_m: 0.05
+    place_descend_before_place: true
+    place_descend_offset_m: 0.08
+    # Reach the final TCP with the gripper still closed. It must then remain
+    # inside a 1 mm / 0.5 deg envelope continuously for 400 ms before release.
+    place_release_stability_window_s: 0.4
+    place_release_stability_timeout_s: 3.0
+    place_release_stability_sample_period_s: 0.05
+    place_release_stability_position_tolerance_m: 0.001
+    place_release_stability_orientation_tolerance_deg: 0.5
+    # After PLACE opens the gripper, remove the released object from MoveIt's
+    # collision scene. Retreat in pure world -X while holding TCP Y/Z and
+    # orientation unchanged: the first 5 cm is slow, then continue faster to
+    # TCP x=0.3375 (3 cm outside shelf front x=0.3675).
+    retreat_after_place: true
+    # Minimum total retreat; the safe-world-X plane normally requests ~0.15 m.
+    retreat_after_place_offset_m: 0.08
+    retreat_after_place_release_settle_s: 0.2
+    retreat_after_place_slow_distance_m: 0.05
+    retreat_after_place_safe_world_x_m: 0.3375
+    retreat_after_place_max_distance_m: 0.22
+    retreat_after_place_eef_step_m: 0.005
+    retreat_after_place_slow_velocity_scaling: 0.15
+    retreat_after_place_fast_velocity_scaling: 0.35
+    retreat_after_place_slow_acceleration_scaling: 0.15
+    retreat_after_place_fast_acceleration_scaling: 0.35
+    grasp_z_offset_m: 0.0
+    grasp_orientation_mode: remote
+    pick_grasp_orientation_mode: capture_tcp
+    # Only /execute_named_full_flow_pick_task uses the 121-returned quaternion.
+    # Standalone restock and pick keep their existing orientation policies.
+    full_flow_pick_grasp_orientation_mode: remote
+    enable_roll_180_grasp_branch: false
+    # Keep the 121 pose as the first choice. Only when MoveIt explicitly
+    # returns "no IK solution", try bounded rotations in the TCP local frame.
+    # Local Y keeps the gripper opening axis fixed and changes approach Z;
+    # local Z keeps approach Z fixed and rotates the opening direction with
+    # the full TCP orientation. Scene 3 validates the complete Cartesian
+    # approach before locking the successful candidate; scene 1 retains its
+    # original PRE_GRASP lock behavior.
+    grasp_ik_fallback_enabled: true
+    grasp_ik_full_approach_selection_scene_ids: [3]
+    # The large shelf may require a looser approach direction near the lower
+    # reach boundary. Local Y rotations preserve the gripper opening axis, so
+    # the fingers remain aligned with the inferred grasp while the approach is
+    # allowed to rotate as far as 30 degrees. Scene 1 keeps the legacy list.
+    grasp_ik_fallback_relaxed_scene_ids: [3]
+    grasp_ik_fallback_relaxed_local_y_degrees: [3.0, -3.0, 5.0, -5.0, 8.0, 10.0, 12.0, 15.0, 18.0, 20.0, 25.0, 30.0, -8.0, -10.0, -12.0, -15.0, -18.0, -20.0, -25.0, -30.0]
+    # Keep fallback-only compensation for flows outside the dual-arm upright
+    # mode. When both apply, the upright-axis mode below takes precedence and
+    # the two rotations are never stacked.
+    compensate_place_orientation_from_grasp_delta: true
+    # Every product is eligible for upright correction when its approach axis
+    # stays within 45 degrees of the horizontal plane. Scene 3 additionally
+    # forces this correction after a relaxed grasp: record the inferred model
+    # long axis in the live grasp TCP and rotate it to world +Z at every place
+    # target. "*" selects current and future targets.
+    place_upright_axis_compensation_enabled: true
+    place_upright_axis_compensation_force_scene_ids: [3]
+    place_upright_axis_compensation_profiles: [grasp]
+    place_upright_axis_compensation_arms: [left, right]
+    place_upright_axis_compensation_targets: ["*"]
+    place_upright_side_grasp_max_vertical_deviation_deg: 45.0
+    # Allow small execution/calibration variation while still rejecting a visibly tilted bottle.
+    place_upright_tilt_limit_deg: 4.0
+    grasp_ik_fallback_profiles: [grasp]
+    grasp_ik_fallback_local_y_degrees: [3.0, -3.0, 5.0, -5.0, 8.0, -8.0]
+    grasp_ik_fallback_local_z_degrees: [3.0, -3.0, 5.0, -5.0]
+    vertical_down_tcp_orientation_xyzw: [0.43211536819586643, -0.8948553616659032, -0.06568261530057382, -0.0905316757495029]
+    left_fixed_tcp_orientation_xyzw: [0.4503663340255283, 0.8820263705427539, -0.05742608216588578, 0.12610270389908398]
+    right_fixed_tcp_orientation_xyzw: [0.43211536819586643, -0.8948553616659032, -0.06568261530057382, -0.0905316757495029]
+    default_gripper_width_m: 0.08
+    closed_gripper_width_m: 0.0
+
+    place_frame: world
+    place_position.x: 0.17768991018428854
+    place_position.y: -0.005014409103969657
+    place_position.z: 0.07457964177104534
+    place_orientation.x: 0.7088552596330816
+    place_orientation.y: -0.7027264835289486
+    place_orientation.z: -0.05097324094119514
+    place_orientation.w: -0.03318793373359758
+
+    # Temporary pick drop pose. Replace these when the picking placement pose is measured.
+    pick_place_frame: world
+    pick_place_position.x: 0.17768991018428854
+    pick_place_position.y: -0.005014409103969657
+    pick_place_position.z: 0.07457964177104534
+    pick_place_orientation.x: 0.7088552596330816
+    pick_place_orientation.y: -0.7027264835289486
+    pick_place_orientation.z: -0.05097324094119514
+    pick_place_orientation.w: -0.03318793373359758
+
+    pick_left_capture_tcp_frame: world
+
+    pick_left_capture_tcp_position.x: 0.17710353243685129
+
+    pick_left_capture_tcp_position.y: 0.2369344036166066
+
+    pick_left_capture_tcp_position.z: 0.5366002804556596
+
+    pick_left_capture_tcp_orientation.x: 0.10802329253558395
+
+    pick_left_capture_tcp_orientation.y: 0.6888425645313024
+
+    pick_left_capture_tcp_orientation.z: -0.15189767532326912
+
+    pick_left_capture_tcp_orientation.w: 0.7005383542612762
+
+    full_flow_pick_left_capture_joint_enabled: true
+
+    full_flow_pick_left_capture_joint_positions: [-0.498776292, 0.68677028, -1.42063936, 0.18098150000000002, 0.8014122480000001, -0.18098150000000002]
+
+    full_flow_pick_left_capture_tcp_frame: world
+
+    full_flow_pick_left_capture_tcp_position.x: 0.17710353243685129
+
+    full_flow_pick_left_capture_tcp_position.y: 0.2369344036166066
+
+    full_flow_pick_left_capture_tcp_position.z: 0.5366002804556596
+
+    full_flow_pick_left_capture_tcp_orientation.x: 0.10802329253558395
+
+    full_flow_pick_left_capture_tcp_orientation.y: 0.6888425645313024
+
+    full_flow_pick_left_capture_tcp_orientation.z: -0.15189767532326912
+
+    full_flow_pick_left_capture_tcp_orientation.w: 0.7005383542612762

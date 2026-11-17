@@ -1,0 +1,12 @@
+# Ordered world -> right_link6 poses between the current/photo pose and the
+# generated pre-grasp target. Disabled by design: PRE_GRASP keeps the original
+# state-machine planning path and does not use the V3 waypoint route.
+# Captured from stationary /joint_states_right feedback on 2026-08-20:
+# [0.912774744, 1.407765688, -0.252170464, -0.171212860,
+#  -0.642968396, 0.134580460].
+enabled: false
+arm_name: right
+frame_id: world
+waypoints:
+  - position: [0.12379327147272598, -0.12466216304800698, 0.16072666894454657]
+    orientation: [-0.39657218392213117, 0.742424829329122, 0.275185874429191, 0.4645520533261014]

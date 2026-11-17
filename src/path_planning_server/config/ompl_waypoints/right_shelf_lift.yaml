@@ -1,0 +1,9 @@
+arm_name: right
+frame_id: world
+
+# position和orientation均为link6
+waypoints:
+  - position: [0.145642650, -0.141370331, 0.322976257]
+    orientation: [-0.366200687, 0.850460601, 0.117662662, 0.358844424]
+  - position: [0.167858013, -0.149283963, 0.600500552]
+    orientation: [0.025178029, 0.703832057, 0.067981060, 0.706657681]

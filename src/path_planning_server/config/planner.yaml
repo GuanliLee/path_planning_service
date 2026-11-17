@@ -1,0 +1,37 @@
+path_planning_server:
+  ros__parameters:
+    world_frame: world
+    left_planning_group: left_arm
+    right_planning_group: right_arm
+    left_end_effector_link: left_link6
+    right_end_effector_link: right_link6
+    default_scene_id: 1
+    # Keep failed requests responsive; the upper state machine no longer retries.
+    planning_time: 5.0
+    planning_attempts: 1
+    velocity_scaling: 0.50
+    acceleration_scaling: 0.50
+    position_tolerance: 0.005
+    orientation_tolerance: 0.05
+    gripper_move_duration: 1.0
+    # Final PLACE release only: open continuously over 3 seconds so the object
+    # is not disturbed by an abrupt full-width command.
+    gripper_release_duration: 3.0
+    gripper_effort: 5.0
+    gripper_contact_opening_threshold: 0.02
+    gripper_contact_goal_tolerance: 0.001
+    gripper_contact_goal_time_tolerance: 0.3
+    treat_gripper_contact_abort_as_success: true
+    position_constraint.min_x_m: 0.0
+    position_constraint.max_x_m: 0.65
+    position_constraint.left.min_y_m: -0.45
+    position_constraint.left.max_y_m: 0.3
+    position_constraint.right.min_y_m: -0.3
+    position_constraint.right.max_y_m: 0.45
+    position_constraint.min_z_m: 0.05
+    position_constraint.max_z_m: 0.7
+    # Conservative outward collision envelope for the right wrist camera
+    # assembly. These values affect collision checking in every shelf scene.
+    robot_link_padding.right_camera_stand_m: 0.020
+    robot_link_padding.right_camera_link_m: 0.020
+    scene_index_file: config/scenes/scene_index.yaml

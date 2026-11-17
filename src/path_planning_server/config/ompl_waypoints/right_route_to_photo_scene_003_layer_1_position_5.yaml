@@ -1,0 +1,9 @@
+enabled: true
+arm_name: right
+frame_id: world
+# 货架2（Scene 3）第一层位置5返回拍照位的专用 Link6 路线。
+# 单个返回阶段途经点已于 2026-08-26 完成示教确认。
+waypoints:
+  # 返回途经点1：2026-08-26读取自 world -> right_link6。
+  - position: [0.079349793, -0.307265467, 0.365223576]
+    orientation: [-0.008458638, 0.843088605, -0.052767499, 0.535112742]

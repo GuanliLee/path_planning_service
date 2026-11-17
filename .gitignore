@@ -1,0 +1,15 @@
+build/
+install/
+log/
+debug/
+calibration/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.orig
+*.bak*
+*.before_*
+*.pre_*
+*.rej
+src/path_planning_server/meshes/beverages/
+src/path_planning_server/meshes/wrist_camera/

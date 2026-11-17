@@ -1,0 +1,106 @@
+scene_id: 3
+scene_name: dual_piper_with_measured_large_shelf
+world_frame: world
+
+robot:
+  dual_arm_source: agilex_xpc_dual_piper_rviz
+  base_distance: 0.6
+
+# The physical table is not part of the collision scene. The shelf, central
+# pillar, and overhead camera obstacle remain active.
+table:
+  enabled: false
+  id: scene_3_table
+  frame_id: world
+  type: box
+  size_x: 1.0
+  size_y: 1.2
+  thickness: 0.05
+  top_z: 0.0
+  center_x: 0.43
+  center_y: 0.0
+
+open_trapezoid_box:
+  enabled: false
+  id: scene_3_open_trapezoid_box
+  frame_id: world
+  type: open_trapezoid_box
+  bottom_length: 0.3
+  bottom_width: 0.2
+  top_length: 0.4
+  top_width: 0.3
+  height: 0.2
+  thickness: 0.005
+  long_axis: y
+  bottom_z: 0.0
+  center_x: 0.22
+  center_y: 0.0
+
+shelf:
+  enabled: true
+  id: scene_3_large_shelf
+  frame_id: world
+  type: shelf
+
+  # Measured outer dimensions. The 1.0 m long side follows world Y and the
+  # 0.30 m depth follows world X.
+  length: 1.0
+  width: 0.30
+  height: 0.80
+  long_axis: y
+
+  # The three provided board heights are their top surfaces:
+  #   0.13 m, 0.46 m, 0.80 m.
+  # With 0.03 m board thickness, their collision-box center heights are:
+  #   top_z - thickness / 2.
+  board_length: 1.0
+  board_width: 0.30
+  board_thickness: 0.03
+  board_center_heights: [0.115, 0.445, 0.785]
+  # Four corner posts, measured 4 cm across. The shelf loader represents each
+  # post as a vertical cylinder whose outer diameter is this value.
+  post_diameter: 0.04
+
+  # Conservatively model both Y-end frames as solid collision panels. This
+  # prevents the arms from cutting through the shelf ends while leaving the
+  # front (minimum X side) open for placement.
+  side_panels_enabled: true
+  side_panel_thickness: 0.015
+  side_panel_height: 0.80
+
+  # The right-arm planning TCP was placed on the shelf's front-right corner:
+  #   corner = [0.4052727781, -0.5844874408, 0.0227543088] m in world.
+  # Hence:
+  #   front/min-X = corner.x
+  #   right/min-Y = corner.y
+  #   center_x = front + width / 2
+  #   center_y = right + length / 2
+  # Shelf bounds are X=[0.4052727781, 0.7052727781],
+  # Y=[-0.5844874408, 0.4155125592], Z=[0.0, 0.8].
+  bottom_z: 0.0
+  center_x: 0.5552727780508177
+  center_y: -0.08448744075671955
+
+obstacle:
+  enabled: true
+  id: scene_3_pillar
+  frame_id: world
+  type: box
+  size_x: 0.03
+  size_y: 0.03
+  size_z: 0.7
+  center_x: -0.085
+  center_y: 0.0
+  center_z: 0.35
+
+camera_obstacle:
+  enabled: true
+  id: scene_3_camera
+  frame_id: world
+  type: box
+  size_x: 0.09
+  size_y: 0.09
+  size_z: 0.1
+  center_x: -0.025
+  center_y: 0.0
+  center_z: 0.65

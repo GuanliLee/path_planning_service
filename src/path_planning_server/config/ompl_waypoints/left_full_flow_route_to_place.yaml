@@ -1,0 +1,10 @@
+# Full-flow left-arm restock route from GRASP to the final PLACE target.
+# Mirrored from the calibrated standalone right-arm restock route across world Y=0.
+enabled: true
+arm_name: left
+frame_id: world
+waypoints:
+  - position: [0.171, 0.110, 0.384]
+    orientation: [0.315, 0.729, -0.252, 0.553]
+  - position: [0.350, 0.085, 0.424]
+    orientation: [0.258, 0.751, -0.115, 0.597]

@@ -1,0 +1,8 @@
+<library path="multi_segment_ompl_planner">
+  <class
+    name="path_planning_server/MultiSegmentOmplPlanner"
+    type="path_planning_server::MultiSegmentOmplPlanner"
+    base_class_type="planning_interface::PlannerManager">
+    <description>Runs ordered OMPL segments and returns one concatenated trajectory.</description>
+  </class>
+</library>

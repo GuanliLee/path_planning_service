@@ -1,0 +1,10 @@
+trajectory_optimizer:
+  stomp:
+    num_timesteps: 60
+    num_iterations: 40
+    num_iterations_after_valid: 0
+    num_rollouts: 30
+    max_rollouts: 30
+    exponentiated_cost_sensitivity: 0.8
+    control_cost_weight: 0.1
+    delta_t: 0.1

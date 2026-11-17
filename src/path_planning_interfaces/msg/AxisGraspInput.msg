@@ -1,0 +1,3 @@
+geometry_msgs/Point axis_start_world
+geometry_msgs/Point axis_end_world
+geometry_msgs/Point grasp_point_world

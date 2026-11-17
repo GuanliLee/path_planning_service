@@ -1,0 +1,7 @@
+<library path="trajectory_preference_adapter">
+  <class name="path_planning_server/TrajectoryPreferenceAdapter"
+         type="path_planning_server::TrajectoryPreferenceAdapter"
+         base_class_type="planning_interface::PlanningResponseAdapter">
+    <description>Optimizes a trajectory with configurable preference costs.</description>
+  </class>
+</library>

@@ -1,0 +1,7 @@
+<library path="trajectory_optimizer_adapter">
+  <class name="path_planning_server/TrajectoryOptimizerAdapter"
+         type="path_planning_server::TrajectoryOptimizerAdapter"
+         base_class_type="planning_interface::PlanningResponseAdapter">
+    <description>Optionally optimizes an OMPL trajectory with CHOMP or STOMP.</description>
+  </class>
+</library>

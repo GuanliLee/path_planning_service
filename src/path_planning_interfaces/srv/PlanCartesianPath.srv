@@ -1,0 +1,12 @@
+string arm_name
+uint32 scene_id
+# Pose of the configured MoveIt end-effector link (left/right_link6), not TCP.
+geometry_msgs/PoseStamped target_pose
+float64 max_velocity_scaling_factor
+float64 max_acceleration_scaling_factor
+float64 eef_step_m
+---
+bool success
+string message
+float64 fraction
+moveit_msgs/RobotTrajectory trajectory

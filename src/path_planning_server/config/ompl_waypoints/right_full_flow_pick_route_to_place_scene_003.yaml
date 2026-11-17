@@ -1,0 +1,7 @@
+enabled: false
+arm_name: right
+frame_id: world
+# Placeholder only. Enable after manually teaching full-flow right picking.
+waypoints:
+  - position: [0.0, 0.0, 0.0]
+    orientation: [0.0, 0.0, 0.0, 1.0]

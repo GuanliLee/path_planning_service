@@ -1,0 +1,2 @@
+sensor_msgs/PointCloud2 point_cloud
+geometry_msgs/Point grasp_point
