@@ -49,7 +49,9 @@ ros2 launch path_planning_server path_planning_service.launch.py \
 
 ## 视觉抓取配置
 
-`src/path_planning_server/config/grasp_bridge_state_machine.right.yaml` 定义视觉推理服务地址、抓取流程和路线。默认地址为本机示例值，应改为实际服务地址。左右腕相机的手眼标定文件默认从 `~/.config/path_planning_service/calibration/` 读取；现场标定数据不随代码发布。
+`src/path_planning_server/config/grasp_bridge_state_machine.right.yaml` 定义视觉推理服务地址、抓取流程和路线。默认地址为本机示例值，应改为实际服务地址。左右腕相机的手眼标定文件默认从 `~/.config/path_planning_service/calibration/` 读取；标定仓库提供实测格式样例，部署时使用当前设备重新标定的结果。
+
+三相机采集、棋盘格检测与手眼标定流程见 [Three-Camera Hand–Eye Calibration](https://github.com/GuanliLee/realsense_three_cameras_calibration)。
 
 抓取物 mesh 模式按 `target_name` 从 `src/path_planning_server/meshes/beverages/` 加载碰撞模型与可视化模型。饮料包装资产不包含在公开仓库中；使用 mesh 模式前，应自行放入有再分发或使用授权的 `collision.stl`、`visual.dae` 和纹理。基础位姿规划与静态场景示例不依赖这些饮料模型。
 
